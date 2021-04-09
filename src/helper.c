@@ -145,7 +145,7 @@ void show_packet(struct mypacket *packet)
             printf("\t+ SPort: %d\n", ntohs(packet->tcphdr->th_sport));
             printf("\t+ DPort: %d\n", ntohs(packet->tcphdr->th_dport));
             printf("\t+ Seq num: %08x\n", ntohl(packet->tcphdr->th_seq));
-            printf("\t+ Ack num: %08x\n", ntohl(packet->tcphdr->th_sport));
+            printf("\t+ Ack num: %08x\n", ntohl(packet->tcphdr->th_ack));
             printf("\t+ Data offset: %d\n", packet->tcphdr->th_off);
             printf("\t+ TCP flags: %s\n", tcp_flags(packet->tcphdr->th_flags));
             printf("\t+ Window: %d\n", ntohs(packet->tcphdr->th_win));
@@ -262,5 +262,41 @@ int is_blocked_ip(const char *ip)
 
 int startswith(const char *a, const char *b) {
     return (strncmp(a, b, strlen(b)) == 0);
+}
+
+// not 100% accurate, may have false-positive
+int is_https_client_hello(const char *payload) {
+    if (payload[0] == 0x16) // Type == Handshake
+    {
+        if (payload[1] == 0x03) // Version
+        {
+            if (payload[5] == 0x01) // Type == ClientHello
+            {
+                if (payload[9] == 0x03) // First byte of Version
+                {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+// not 100% accurate, may have false-positive
+int is_https_server_hello(const char *payload) {
+    if (payload[0] == 0x16) // Type == Handshake
+    {
+        if (payload[1] == 0x03) // First byte of Version
+        {
+            if (payload[5] == 0x02) // Type == ServerHello
+            {
+                if (payload[9] == 0x03) // First byte of Version
+                {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
